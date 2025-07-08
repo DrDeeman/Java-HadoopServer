@@ -1,3 +1,5 @@
+version: '3.9'
+
 services:
   namenode:
     image: bde2020/hadoop-namenode:2.0.0-hadoop3.2.1-java8
@@ -6,12 +8,16 @@ services:
     ports:
       - 9870:9870
       - 9000:9000
+      - 8020:8020
     volumes:
       - hadoop_namenode:/hadoop/dfs/name
     environment:
       - CLUSTER_NAME=test
     env_file:
       - ./hadoop.env
+    networks:
+      web:
+        ipv4_address: 172.16.238.2
 
   datanode1:
     image: bde2020/hadoop-datanode:2.0.0-hadoop3.2.1-java8
@@ -23,6 +29,9 @@ services:
       SERVICE_PRECONDITION: "namenode:9870"
     env_file:
       - ./hadoop.env
+    networks:
+      web:
+        ipv4_address: 172.16.238.3
  
   datanode2:
     image: bde2020/hadoop-datanode:2.0.0-hadoop3.2.1-java8
@@ -34,6 +43,9 @@ services:
       SERVICE_PRECONDITION: "namenode:9870"
     env_file:
       - ./hadoop.env
+    networks:
+      web:
+        ipv4_address: 172.16.238.4
   
   resourcemanager:
     image: bde2020/hadoop-resourcemanager:2.0.0-hadoop3.2.1-java8
@@ -43,6 +55,9 @@ services:
       SERVICE_PRECONDITION: "namenode:9000 namenode:9870 datanode1:9864 datanode2:9864"
     env_file:
       - ./hadoop.env
+    networks:
+      web:
+        ipv4_address: 172.16.238.5
 
   nodemanager1:
     image: bde2020/hadoop-nodemanager:2.0.0-hadoop3.2.1-java8
@@ -52,6 +67,9 @@ services:
       SERVICE_PRECONDITION: "namenode:9000 namenode:9870 datanode1:9864 datanode2:9864 resourcemanager:8088"
     env_file:
       - hadoop.env
+    networks:
+      web:
+        ipv4_address: 172.16.238.6
   
   historyserver:
     image: bde2020/hadoop-historyserver:2.0.0-hadoop3.2.1-java8
@@ -63,7 +81,79 @@ services:
       - hadoop_historyserver:/hadoop/yarn/timeline
     env_file:
       - hadoop.env
-  
+    networks:
+      web:
+        ipv4_address: 172.16.238.7
+
+
+  hive-server:
+    image: bde2020/hive:2.3.2-postgresql-metastore
+    container_name: hive-server
+    depends_on:
+      - namenode
+      - datanode1
+      - datanode2
+    env_file:
+      - ./hadoop.env
+    environment:
+      HIVE_CORE_CONF_javax_jdo_option_ConnectionURL: "jdbc:postgresql://hive-metastore/metastore"
+      SERVICE_PRECONDITION: "hive-metastore:9083"
+    ports:
+      - "10000:10000"
+    networks:
+      web:
+        ipv4_address: 172.16.238.8
+
+  hive-metastore:
+    image: bde2020/hive:2.3.2-postgresql-metastore
+    container_name: hive-metastore
+    env_file:
+      - ./hadoop.env
+    command: /opt/hive/bin/hive --service metastore
+    environment:
+      SERVICE_PRECONDITION: "namenode:9870 datanode1:9864 datanode2:9864 hive-metastore-postgresql:5432"
+    ports:
+      - "9083:9083"
+    networks:
+      web:
+        ipv4_address: 172.16.238.9
+
+  hive-metastore-postgresql:
+    image: bde2020/hive-metastore-postgresql:2.3.0
+    container_name: hive-metastore-postgresql
+    ports:
+      - "5432:5432"
+    networks:
+      web:
+        ipv4_address: 172.16.238.10
+
+
+
+  hue:
+    image: gethue/hue:4.6.0
+    environment:
+      SERVICE_PRECONDITION: "namenode:9870 datanode1:9864 datanode2:9864 hive-metastore-postgresql:5432 resourcemanager:8088 hive-metastore:9083"
+    ports:
+      - "8888:8888"
+    volumes:
+      - ./hue.ini:/usr/share/hue/desktop/conf/hue-overrides.ini
+    networks:
+      web:
+        ipv4_address: 172.16.238.11
+
+
+networks:
+  web:
+    driver: bridge
+    name: web
+    ipam:
+      driver: default
+      config:
+        - subnet: 172.16.238.0/24
+          gateway: 172.16.238.1
+
+
+
 volumes:
   hadoop_namenode:
   hadoop_datanode1:
