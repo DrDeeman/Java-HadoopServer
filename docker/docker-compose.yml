@@ -127,8 +127,6 @@ services:
       web:
         ipv4_address: 172.16.238.10
 
-
-
   hue:
     image: gethue/hue:4.6.0
     environment:
@@ -159,3 +157,4 @@ volumes:
   hadoop_datanode1:
   hadoop_datanode2:
   hadoop_historyserver:
+  pg_data:
