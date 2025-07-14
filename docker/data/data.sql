@@ -1,3 +1,32 @@
 CREATE DATABASE IF NOT EXISTS test_hive;
+
 USE test_hive;
-CREATE TABLE IF NOT EXISTS test(id String) STORED AS TEXTFILE location 'hdfs://namenode:9000/user/hive/warehouse/test_hive.db/test';
+
+DROP TABLE users;
+
+CREATE TABLE IF NOT EXISTS users(
+id INT,
+old INT,
+PRIMARY KEY(id) disable novalidate
+) 
+ROW FORMAT DELIMITED
+FIELDS TERMINATED BY '\t'
+LINES TERMINATED BY '\n'
+STORED AS TEXTFILE location 'hdfs://namenode:9000/user/hive/warehouse/test_hive.db/users';
+
+DROP TABLE products;
+
+CREATE TABLE IF NOT EXISTS products(
+id int,
+id_user int,
+`name` string,
+price int,
+PRIMARY KEY(id) disable novalidate,
+CONSTRAINT fk_products_id_user FOREIGN KEY(id_user) REFERENCES users(id) disable novalidate
+) 
+ROW FORMAT DELIMITED
+FIELDS TERMINATED BY '\t'
+LINES TERMINATED BY '\n'
+STORED AS TEXTFILE location 'hdfs://namenode:9000/user/hive/warehouse/test_hive.db/products';
+
+
