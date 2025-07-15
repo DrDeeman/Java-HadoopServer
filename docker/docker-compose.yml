@@ -95,15 +95,6 @@ services:
       SERVICE_PRECONDITION: "hive-metastore:9083"
     ports:
       - "10000:10000"
-    entrypoint: ["/bin/sh", "-c"]
-    command: |
-       '
-       sleep 10
-       rm -Rf /opt/hive/metadtore_db
-       /opt/hive/bin/schematool -initSchema -dbType derby
-       hive -f /data/data.sql
-       sh -c "while true; do sleep 3600; done"
-       '
 
 
   hive-metastore:
